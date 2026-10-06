@@ -1,9 +1,11 @@
 package com.mayank.personalexpenseai.controller;
 
+import com.mayank.personalexpenseai.dto.CsvImportResponse;
 import com.mayank.personalexpenseai.dto.ExpenseRequest;
 import com.mayank.personalexpenseai.dto.ExpenseResponse;
 import com.mayank.personalexpenseai.entity.Expense;
 import com.mayank.personalexpenseai.entity.ExpenseCategory;
+import com.mayank.personalexpenseai.service.CsvImportService;
 import com.mayank.personalexpenseai.service.ExpenseService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
@@ -21,6 +23,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -31,9 +36,11 @@ import java.util.UUID;
 public class ExpenseController {
 
     private final ExpenseService expenseService;
+    private final CsvImportService csvImportService;
 
-    public ExpenseController(ExpenseService expenseService) {
+    public ExpenseController(ExpenseService expenseService, CsvImportService csvImportService) {
         this.expenseService = expenseService;
+        this.csvImportService = csvImportService;
     }
 
     @PostMapping
@@ -88,5 +95,14 @@ public class ExpenseController {
     @GetMapping("/analytics/total")
     public BigDecimal getTotalSpending(@RequestParam LocalDate startDate, @RequestParam LocalDate endDate) {
         return expenseService.getTotalSpending(startDate, endDate);
+    }
+
+    @PostMapping(value = "/import/csv", consumes = "multipart/form-data")
+    public ResponseEntity<CsvImportResponse> importCsv(@RequestParam("file") MultipartFile file) throws IOException {
+        if (file.isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+        CsvImportResponse response = csvImportService.importCsv(file);
+        return ResponseEntity.ok(response);
     }
 }
